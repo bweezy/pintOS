@@ -97,6 +97,9 @@ struct thread
     struct semaphore timer_sema;
     struct list_elem timer_elem;
 
+    /*For task 2*/
+    int priority_eff;
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -151,4 +154,7 @@ const struct list_elem *right, void *aux UNUSED);
 bool higher_priority(const struct list_elem *left,
 const struct list_elem *right, void *aux UNUSED);
 
+void donate_priority(struct thread *donee);
+
+int check_ready_priority(void);
 #endif /* threads/thread.h */

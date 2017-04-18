@@ -136,7 +136,7 @@ thread_tick (void)
     kernel_ticks++;
 
   /* Enforce preemption. */
-  if (++thread_ticks >= TIME_SLICE)
+  if (++thread_ticks >= TIME_SLICE) // || check_ready_priority() > t->priority_eff)
     intr_yield_on_return ();
 }
 
@@ -202,6 +202,9 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
+  if (t->priority_eff > thread_current()->priority_eff)
+  	thread_yield();
+
   return tid;
 }
 
@@ -242,6 +245,8 @@ thread_unblock (struct thread *t)
   list_insert_ordered(&ready_list, &t->elem, higher_priority, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+  //if(t->priority_eff > thread_current()->priority_eff)
+  	//thread_yield();
 }
 
 /* Returns the name of the running thread. */
@@ -337,14 +342,16 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority)
 {
-  thread_current ()->priority = new_priority;
+  thread_current ()->priority_eff = new_priority;
+  if(new_priority < check_ready_priority())
+  	thread_yield();
 }
 
 /* Returns the current thread's priority. */
 int
 thread_get_priority (void)
 {
-  return thread_current ()->priority;
+  return thread_current ()->priority_eff;
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -464,6 +471,7 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
+  t->priority_eff = priority;
   t->magic = THREAD_MAGIC;
 
   sema_init(&t->timer_sema, 0);
@@ -583,9 +591,6 @@ allocate_tid (void)
   return tid;
 }
 
-
-
-
 bool
 less_wakeup (const struct list_elem *left,
 const struct list_elem *right, void *aux UNUSED){
@@ -596,7 +601,7 @@ const struct list_elem *right, void *aux UNUSED){
   if (tleft->wakeup_time != tright->wakeup_time)
     return (tleft->wakeup_time < tright->wakeup_time);
   else
-    return (tleft->priority > tright->priority);
+    return (tleft->priority_eff > tright->priority_eff);
 }
 
 bool
@@ -606,10 +611,25 @@ const struct list_elem *right, void *aux UNUSED){
 	struct thread *tleft = list_entry(left, struct thread, elem);
 	struct thread *tright = list_entry(right, struct thread, elem);
 
-	return (tleft->priority > tright->priority);
+	return (tleft->priority_eff > tright->priority_eff);
 }
 
+void
+donate_priority(struct thread *donee){
 
+	donee->priority_eff = thread_get_priority();
+	list_sort(&ready_list, higher_priority, NULL);
+
+}
+
+int check_ready_priority(void){
+
+	if(list_empty(&ready_list))
+		return PRI_MIN - 1;
+
+	return list_entry(list_front(&ready_list), struct thread, elem)->priority_eff;
+
+}
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */
