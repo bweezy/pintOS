@@ -238,7 +238,8 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  //list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list, &t->elem, higher_priority, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
@@ -309,7 +310,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread)
-    list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered (&ready_list, &cur->elem, higher_priority, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -592,15 +593,23 @@ const struct list_elem *right, void *aux UNUSED){
   struct thread *tleft = list_entry(left, struct thread, timer_elem);
   struct thread *tright = list_entry(right, struct thread, timer_elem);
 
-  if (tleft->wakeup_time != tright->wakeup_time){
+  if (tleft->wakeup_time != tright->wakeup_time)
     return (tleft->wakeup_time < tright->wakeup_time);
-  }
-  else{
-    //printf("left priority: %d\t right priority: %d\t\n", tleft->priority, tright->priority);
+  else
     return (tleft->priority > tright->priority);
-  }
-
 }
+
+bool
+higher_priority(const struct list_elem *left,
+const struct list_elem *right, void *aux UNUSED){
+
+	struct thread *tleft = list_entry(left, struct thread, elem);
+	struct thread *tright = list_entry(right, struct thread, elem);
+
+	return (tleft->priority > tright->priority);
+}
+
+
 
 /* Offset of `stack' member within `struct thread'.
    Used by switch.S, which can't figure it out on its own. */

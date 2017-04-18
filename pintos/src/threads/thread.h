@@ -148,9 +148,7 @@ int thread_get_load_avg (void);
 bool less_wakeup (const struct list_elem *left,
 const struct list_elem *right, void *aux UNUSED);
 
-
-
-
-
+bool higher_priority(const struct list_elem *left,
+const struct list_elem *right, void *aux UNUSED);
 
 #endif /* threads/thread.h */
