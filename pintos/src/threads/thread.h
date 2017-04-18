@@ -92,6 +92,11 @@ struct thread
     int priority;                       /* Priority. */
     struct list_elem allelem;           /* List element for all threads list. */
 
+    /*For task 1*/
+    int64_t wakeup_time;
+    struct semaphore timer_sema;
+    struct list_elem timer_elem;
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -139,5 +144,13 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+bool less_wakeup (const struct list_elem *left,
+const struct list_elem *right, void *aux UNUSED);
+
+
+
+
+
 
 #endif /* threads/thread.h */

@@ -4,6 +4,7 @@
 #include <random.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include "threads/flags.h"
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
@@ -464,6 +465,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
 
+  sema_init(&t->timer_sema, 0);
+
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
@@ -577,6 +580,26 @@ allocate_tid (void)
   lock_release (&tid_lock);
 
   return tid;
+}
+
+
+
+
+bool
+less_wakeup (const struct list_elem *left,
+const struct list_elem *right, void *aux UNUSED){
+
+  struct thread *tleft = list_entry(left, struct thread, timer_elem);
+  struct thread *tright = list_entry(right, struct thread, timer_elem);
+
+  if (tleft->wakeup_time != tright->wakeup_time){
+    return (tleft->wakeup_time < tright->wakeup_time);
+  }
+  else{
+    //printf("left priority: %d\t right priority: %d\t\n", tleft->priority, tright->priority);
+    return (tleft->priority > tright->priority);
+  }
+
 }
 
 /* Offset of `stack' member within `struct thread'.
