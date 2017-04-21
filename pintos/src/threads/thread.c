@@ -201,9 +201,12 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
-  if (t->priority_eff > thread_current()->priority_eff)
-  	thread_yield();
+  
+  if(t->priority_eff > thread_current()->priority_eff)
+  {
+    ASSERT(!intr_context());
+    thread_yield();
+  };
 
   return tid;
 }
@@ -241,12 +244,10 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  //list_push_back (&ready_list, &t->elem);
   list_insert_ordered(&ready_list, &t->elem, higher_priority, NULL);
   t->status = THREAD_READY;
+
   intr_set_level (old_level);
-  //if(t->priority_eff > thread_current()->priority_eff)
-  	//thread_yield();
 }
 
 /* Returns the name of the running thread. */
@@ -472,6 +473,7 @@ init_thread (struct thread *t, const char *name, int priority)
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
   t->priority_eff = priority;
+  t->donated = false;
   t->magic = THREAD_MAGIC;
 
   sema_init(&t->timer_sema, 0);
@@ -618,6 +620,7 @@ void
 donate_priority(struct thread *donee){
 
 	donee->priority_eff = thread_get_priority();
+  donee->donated = true;
 	list_sort(&ready_list, higher_priority, NULL);
 
 }

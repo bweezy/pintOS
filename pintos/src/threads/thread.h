@@ -99,6 +99,7 @@ struct thread
 
     /*For task 2*/
     int priority_eff;
+    bool donated;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
